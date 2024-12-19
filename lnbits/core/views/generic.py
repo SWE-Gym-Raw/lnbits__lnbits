@@ -1,4 +1,3 @@
-import json
 from http import HTTPStatus
 from pathlib import Path
 from typing import Annotated, List, Optional, Union
@@ -18,7 +17,7 @@ from lnbits.core.models.extensions import ExtensionMeta, InstallableExtension
 from lnbits.core.services import create_invoice, create_user_account
 from lnbits.core.services.extensions import get_valid_extensions
 from lnbits.decorators import check_admin, check_user_exists
-from lnbits.helpers import get_api_routes, template_renderer
+from lnbits.helpers import template_renderer
 from lnbits.settings import settings
 from lnbits.wallets import get_funding_source
 
@@ -210,13 +209,10 @@ async def account(
     request: Request,
     user: User = Depends(check_user_exists),
 ):
-
-    api_routes = get_api_routes(request.app.router.routes)
-    print("### api_routes", json.dumps(api_routes))
     return template_renderer().TemplateResponse(
         request,
         "core/account.html",
-        {"user": user.json(), "api_routes": json.dumps(api_routes)},
+        {"user": user.json()},
     )
 
 

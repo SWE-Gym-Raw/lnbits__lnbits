@@ -57,7 +57,7 @@ window.app = Vue.createApp({
         ],
         pagination: {
           rowsPerPage: 100,
-          page: 1,
+          page: 1
         }
       },
       selectedApiToken: {
