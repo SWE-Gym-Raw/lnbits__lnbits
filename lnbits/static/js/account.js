@@ -24,8 +24,11 @@ window.app = Vue.createApp({
       },
       apiAcl: {
         showNewAclDialog: false,
+        showNewTokenDialog: false,
         data: [],
         newAclName: '',
+        newTokenName: '',
+        password: '',
         columns: [
           {
             name: 'Name',
@@ -245,12 +248,17 @@ window.app = Vue.createApp({
       }
     },
     newApiAclDialog() {
-      console.log('### this.apiAcl.data', this.apiAcl.data)
       this.apiAcl.newAclName = null
       this.apiAcl.showNewAclDialog = true
     },
+    newTokenAclDialog() {
+      this.apiAcl.newTokenName = null
+      this.apiAcl.password = null
+      this.apiAcl.newTokenExpiry = null
+
+      this.apiAcl.showNewTokenDialog = true
+    },
     handleApiACLSelected(aclId) {
-      console.log('### handleApiACLSelected', aclId)
       this.selectedApiAcl = {id: null, name: null, endpoints: []}
       if (!aclId) {
         return
@@ -280,7 +288,6 @@ window.app = Vue.createApp({
       )
     },
     async addApiACL() {
-      console.log('### addApiACL')
       const name = this.apiAcl.newAclName
       if (!name) {
         return
@@ -300,7 +307,6 @@ window.app = Vue.createApp({
             endpoints: []
           }
         )
-        console.log('### addApiACL', data)
         this.apiAcl.data.push(data)
 
         this.handleApiACLSelected(data.id)
@@ -312,11 +318,7 @@ window.app = Vue.createApp({
     },
     async getApiACLs() {
       try {
-        const {data} = await LNbits.api.request(
-          'GET',
-          '/api/v1/auth/acl',
-          null
-        )
+        const {data} = await LNbits.api.request('GET', '/api/v1/auth/acl', null)
         console.log('### getApiACLs', data)
         this.apiAcl.data = data.access_control_list
       } catch (e) {
@@ -325,7 +327,6 @@ window.app = Vue.createApp({
     },
     async updateApiACLs() {
       try {
-        console.log('### his.apiAcl.data', this.apiAcl.data)
         const {data} = await LNbits.api.request(
           'PUT',
           '/api/v1/auth/acl',
@@ -336,7 +337,6 @@ window.app = Vue.createApp({
           }
         )
         this.apiAcl.data = data.access_control_list
-        console.log('### data', data)
       } catch (e) {
         LNbits.utils.notifyApiError(e)
       }
@@ -361,14 +361,26 @@ window.app = Vue.createApp({
           null,
           {
             acl_id: this.selectedApiAcl.id,
-            password: 'xxx',
-            expiration_time_minutes: 30
+            token_name: this.apiAcl.newTokenName,
+            password: this.apiAcl.password,
+            expiration_time_minutes: this.apiAcl.newTokenExpiry
           }
         )
-        this.selectedApiAcl.apiToken = data.api_token
-        console.log('### data', data)
+
+        this.apiAcl.apiToken = data.api_token
+        this.apiAcl.selectedTokenId = data.id
+        Quasar.Notify.create({
+          type: 'positive',
+          message: 'Token Generated.'
+        })
+
+        await this.getApiACLs()
+        this.handleApiACLSelected(this.selectedApiAcl.id)
+        this.apiAcl.showNewTokenDialog = false
       } catch (e) {
         LNbits.utils.notifyApiError(e)
+      } finally {
+        this.apiAcl.password = null
       }
     }
   },
