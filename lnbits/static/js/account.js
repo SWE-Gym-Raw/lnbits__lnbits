@@ -24,8 +24,10 @@ window.app = Vue.createApp({
       },
       apiAcl: {
         showNewAclDialog: false,
+        showPasswordDialog: false,
         showNewTokenDialog: false,
         data: [],
+        passwordGuardedFunction: null,
         newAclName: '',
         newTokenName: '',
         password: '',
@@ -253,9 +255,7 @@ window.app = Vue.createApp({
     },
     newTokenAclDialog() {
       this.apiAcl.newTokenName = null
-      this.apiAcl.password = null
       this.apiAcl.newTokenExpiry = null
-
       this.apiAcl.showNewTokenDialog = true
     },
     handleApiACLSelected(aclId) {
@@ -287,6 +287,25 @@ window.app = Vue.createApp({
         e => (e.write = this.selectedApiAcl.allWrite)
       )
     },
+    async getApiACLs() {
+      try {
+        const {data} = await LNbits.api.request('GET', '/api/v1/auth/acl', null)
+        this.apiAcl.data = data.access_control_list
+      } catch (e) {
+        LNbits.utils.notifyApiError(e)
+      }
+    },
+    askPasswordAndRunFunction(func) {
+      this.apiAcl.passwordGuardedFunction = func
+      this.apiAcl.showPasswordDialog = true
+    },
+    runPasswordGuardedFunction() {
+      this.apiAcl.showPasswordDialog = false
+      const func = this.apiAcl.passwordGuardedFunction
+      if (func) {
+        this[func]()
+      }
+    },
     async addApiACL() {
       if (!this.apiAcl.newAclName) {
         this.$q.notify({
@@ -295,13 +314,7 @@ window.app = Vue.createApp({
         })
         return
       }
-      if (!this.apiAcl.password) {
-        this.$q.notify({
-          type: 'warning',
-          message: 'User password is required.'
-        })
-        return
-      }
+
       try {
         const {data} = await LNbits.api.request(
           'POST',
@@ -311,29 +324,22 @@ window.app = Vue.createApp({
             id: this.apiAcl.newAclName,
             name: this.apiAcl.newAclName,
             endpoints: [],
-            password: this.apiAcl.password,
+            password: this.apiAcl.password
           }
         )
         this.apiAcl.data.push(data)
 
         this.handleApiACLSelected(data.id)
+        this.apiAcl.showNewAclDialog = false
       } catch (e) {
         LNbits.utils.notifyApiError(e)
       } finally {
-        this.apiAcl.password = null
         this.apiAcl.name = ''
       }
 
       this.apiAcl.showNewAclDialog = false
     },
-    async getApiACLs() {
-      try {
-        const {data} = await LNbits.api.request('GET', '/api/v1/auth/acl', null)
-        this.apiAcl.data = data.access_control_list
-      } catch (e) {
-        LNbits.utils.notifyApiError(e)
-      }
-    },
+
     async updateApiACLs() {
       try {
         const {data} = await LNbits.api.request(
@@ -388,8 +394,6 @@ window.app = Vue.createApp({
         this.apiAcl.showNewTokenDialog = false
       } catch (e) {
         LNbits.utils.notifyApiError(e)
-      } finally {
-        this.apiAcl.password = null
       }
     }
   },
