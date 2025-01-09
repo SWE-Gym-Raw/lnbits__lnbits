@@ -31,6 +31,8 @@ window.app = Vue.createApp({
         newAclName: '',
         newTokenName: '',
         password: '',
+        apiToken: null,
+        selectedTokenId: null,
         columns: [
           {
             name: 'Name',
@@ -266,6 +268,7 @@ window.app = Vue.createApp({
         endpoints: [],
         token_id_list: []
       }
+      this.apiAcl.selectedTokenId = null
       if (!aclId) {
         return
       }
@@ -413,6 +416,30 @@ window.app = Vue.createApp({
         await this.getApiACLs()
         this.handleApiACLSelected(this.selectedApiAcl.id)
         this.apiAcl.showNewTokenDialog = false
+      } catch (e) {
+        LNbits.utils.notifyApiError(e)
+      }
+    },
+    async deleteToken() {
+      if (!this.apiAcl.selectedTokenId) {
+        return
+      }
+      try {
+        await LNbits.api.request('DELETE', '/api/v1/auth/acl/token', null, {
+          id: this.apiAcl.selectedTokenId,
+          acl_id: this.selectedApiAcl.id,
+          password: this.apiAcl.password
+        })
+        this.$q.notify({
+          type: 'positive',
+          message: 'Token deleted.'
+        })
+
+        this.selectedApiAcl.token_id_list =
+          this.selectedApiAcl.token_id_list.filter(
+            t => t.id !== this.apiAcl.selectedTokenId
+          )
+        this.apiAcl.selectedTokenId = null
       } catch (e) {
         LNbits.utils.notifyApiError(e)
       }
