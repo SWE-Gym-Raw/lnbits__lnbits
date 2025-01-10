@@ -393,6 +393,8 @@ window.app = Vue.createApp({
       if (!this.selectedApiAcl.id) {
         return
       }
+      const expirationTimeMilliseconds =
+        new Date(this.apiAcl.newTokenExpiry) - new Date()
       try {
         const {data} = await LNbits.api.request(
           'POST',
@@ -402,7 +404,9 @@ window.app = Vue.createApp({
             acl_id: this.selectedApiAcl.id,
             token_name: this.apiAcl.newTokenName,
             password: this.apiAcl.password,
-            expiration_time_minutes: this.apiAcl.newTokenExpiry
+            expiration_time_minutes: Math.trunc(
+              expirationTimeMilliseconds / 60000
+            )
           }
         )
 
